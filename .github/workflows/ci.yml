@@ -1,0 +1,77 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Display build info
+        run: |
+          echo "✅ Тесты пройдены!"
+          echo "📦 Версия Node.js: $(node --version)"
+          echo "🕐 Время выполнения: $(date)"
+  
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Build application
+        run: |
+          echo "🏗️ Сборка приложения..."
+          mkdir -p dist
+          cp app.js dist/
+          cp package.json dist/
+          echo "✅ Сборка завершена"
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: dist/
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Deploy notification
+        run: |
+          echo "🚀 Начинаем деплой..."
+          echo "📁 Ветка: ${{ github.ref_name }}"
+          echo "🆔 Коммит: ${{ github.sha }}"
+          echo "👤 Автор: ${{ github.actor }}"
+          echo ""
+          echo "✅ Деплой успешно завершен (симуляция)"
